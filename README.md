@@ -20,20 +20,20 @@ java -jar fhir-claml-0.0.1-SNAPSHOT.jar -i [input ClaML file] -o [output FHIR JS
 
 The following options are available:
 
-| Parameter               | Type        | Description   |
-| :---------------------- | :---------- |:------------- |
-| -content                | string      | The extent of the content in this resource. Valid values are not-present, example, fragment, complete and supplement. Defaults to complete. The actual value does not affect the output of the transformation. |
-| -d                      | string      | Indicates which ClaML rubric contains the concepts' displays. Default is 'preferred'. |
-| -definition             | string      | Indicates which ClaML rubric contains the concepts' definitions. Default is 'definition'. |
-| -designations           | string      | Comma-separated list of ClaML rubrics that contain the concepts' synonyms. |
-| -excludeClassKinds      | string      | Comma-separated list of class kinds to exclude. |
-| -excludeKindlessClasses | boolean     | Exclude ClaML classes that do not have kinds (default: false). |
-| -help                   | none        | Print the help message. |
-| -i                      | string      | The input ClaML file. |
-| -id                     | string      | The technical id of the code system. Required if using PUT to upload the resource to a FHIR server. |
-| -o                      | string      | The output FHIR JSON file. |
-| -url                    | string      | Canonical identifier of the code system. |
-| -valueset               | string      | The value set that represents the entire code system. |
+| Parameter                | Type        | Description   |
+| :----------------------- | :---------- |:------------- |
+| -content                 | string      | The extent of the content in this resource. Valid values are not-present, example, fragment, complete and supplement. Defaults to complete. The actual value does not affect the output of the transformation. |
+| -d                       | string      | Indicates which ClaML rubric contains the concepts' displays. Default is 'preferred'. |
+| -definition              | string      | Indicates which ClaML rubric contains the concepts' definitions. Default is 'definition'. |
+| -designations            | string      | Comma-separated list of ClaML rubrics that contain the concepts' synonyms. |
+| -excludeClassKinds       | string      | Comma-separated list of class kinds to exclude. |
+| -excludeKindlessClasses  | boolean     | Exclude ClaML classes that do not have kinds (default: false). |
+| -help                    | none        | Print the help message. |
+| -i                       | string      | The input ClaML file. |
+| -id                      | string      | The technical id of the code system. Required if using PUT to upload the resource to a FHIR server. |
+| -o                       | string      | The output FHIR JSON file. |
+| -url                     | string      | Canonical identifier of the code system. |
+| -valueset                | string      | The value set that represents the entire code system. |
 
 ### Examples
 
