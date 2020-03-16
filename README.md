@@ -43,4 +43,6 @@ The ICD-10-GM classification was transformed using the following command:
 java -jar fhir-claml-0.0.1-SNAPSHOT.jar -i icd10gm2020syst_claml_20190920.xml -designations preferredLong -o codesystem-icd10gm-2020.json -id icd10gm2020 -url http://hl7.org/fhir/sid/icd-10-gm -valueset http://hl7.org/fhir/sid/icd-10-gm/vs
 ```
 
+### Known Issues
 
+* Modifiers are not currently supported
