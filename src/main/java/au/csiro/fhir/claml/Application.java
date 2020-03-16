@@ -61,7 +61,7 @@ public class Application implements CommandLineRunner {
 
 		options.addOption(new Option("help", "Print this message."));
 
-		options.addOption("content", true, "he extent of the content in this resource. Valid values "
+		options.addOption("content", true, "The extent of the content in this resource. Valid values "
 				+ "are not-present, example, fragment, complete and supplement. Defaults to complete. The "
 				+ "actual value does not affect the output of the transformation.");
 
@@ -70,6 +70,12 @@ public class Application implements CommandLineRunner {
 
 		options.addOption("definition", true, "Indicates which ClaML rubric contains the "
 				+ "concepts' definitions. Default is 'definition'");
+
+		options.addOption("designations", true, "Comma-separated list of ClaML rubrics that contain the concepts' synonyms.");
+
+		options.addOption("excludeClassKinds", true, "Comma-separated list of class kinds to exclude.");
+
+		options.addOption("excludeKindlessClasses", true, "Exclude ClaML classes that do not have kinds (default: false)");
 
 		options.addOption(
 				Option.builder("i")
@@ -83,10 +89,6 @@ public class Application implements CommandLineRunner {
 		options.addOption("id", true, "The technical id of the code system. Required if using PUT to "
 				+ "upload the resource to a FHIR server.");
 
-		options.addOption("excludeClassKinds", true, "Comma-separated list of class kinds to exclude.");
-
-		options.addOption("excludeKindlessClasses", true, "Exclude ClaML classes that do not have kinds (default: false)");
-
 		options.addOption(
 				Option.builder("o")
 				.required(true)
@@ -95,8 +97,6 @@ public class Application implements CommandLineRunner {
 				.desc("The output FHIR JSON file.")
 				.build()
 				);
-
-		options.addOption("designations", true, "Comma-separated list of ClaML rubrics that contain the concepts' synonyms.");
 
 		options.addOption("url", true, "Canonical identifier of the code system.");
 
