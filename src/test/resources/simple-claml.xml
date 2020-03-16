@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!DOCTYPE ClaML SYSTEM "http://terminologies.eu/download/en14463-2007.dtd">
+<ClaML version="2.0.0">
+	<Title name="example" date="20070926" version="1">Example ClaML</Title>
+	<ClassKinds>
+		<Kind name="category"/>
+		<Kind name="chapter"/>
+	</ClassKinds>
+	<RubricKinds>
+		<Kind name="preferred"/>
+	</RubricKinds>
+	<Class code="A" kind="chapter">
+		<SubClass code="A.1"/>
+		<SubClass code="A.2"/>
+		<SubClass code="A.3"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">chapter A</Label>
+		</Rubric>
+	</Class>
+	<Class code="B" kind="chapter">
+		<Rubric kind="preferred">
+			<Label xml:lang="en">chapter B</Label>
+		</Rubric>
+	</Class>
+	<Class code="C" kind="chapter">
+		<Rubric kind="preferred">
+			<Label xml:lang="en">chapter C</Label>
+		</Rubric>
+	</Class>
+	<Class code="A.1" kind="category">
+		<SuperClass code="A"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">example class</Label>
+		</Rubric>
+	</Class>
+	<Class code="A.2" kind="category">
+		<SuperClass code="A"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">example class</Label>
+		</Rubric>
+	</Class>
+	<Class code="A.3" kind="category">
+		<SuperClass code="A"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">example class</Label>
+		</Rubric>
+	</Class>
+</ClaML>
