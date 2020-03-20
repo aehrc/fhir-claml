@@ -12,6 +12,9 @@ import java.util.List;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.sax.SAXSource;
 
 import org.hl7.fhir.r4.model.CodeSystem;
 import org.hl7.fhir.r4.model.CodeSystem.CodeSystemContentMode;
@@ -30,6 +33,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
+import org.xml.sax.XMLReader;
 
 import au.csiro.fhir.claml.model.claml.ClaML;
 import au.csiro.fhir.claml.model.claml.Class;
@@ -70,7 +78,7 @@ public class FhirClamlService {
             String url,
             String valueSet,
             String content,
-            File output) throws DataFormatException, IOException {
+            File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
 
     	// Default values
     	if (displayRubric == null) {
@@ -97,9 +105,17 @@ public class FhirClamlService {
                 excludeClassKind = Collections.emptyList();
             }
             
+            SAXParserFactory spf = SAXParserFactory.newInstance();
+            spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            spf.setFeature("http://xml.org/sax/features/validation", false);
+
+            XMLReader xmlReader = spf.newSAXParser().getXMLReader();
+            InputSource inputSource = new InputSource(
+                    new FileReader(clamlFile));
+            SAXSource source = new SAXSource(xmlReader, inputSource);
             
             Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-            ClaML claml = (ClaML) jaxbUnmarshaller.unmarshal(new FileReader(clamlFile));
+            ClaML claml = (ClaML) jaxbUnmarshaller.unmarshal(source);
 
             CodeSystem cs = new CodeSystem();
             cs.setStatus(PublicationStatus.DRAFT);
