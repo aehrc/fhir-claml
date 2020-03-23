@@ -234,9 +234,12 @@ public class FhirClamlService {
                             if (rubric.getLabel().size() > 1) {
                                 log.warn("Found more than one label on display rubric for code " + c.getCode());
                             }
-                            log.info("display: "+ displayRubric + "not found. Falling back to: " + fallBackDisplayRubric);
-                            value = getLabelValue(rubric.getLabel().get(0));
-                            concept.setDisplay(value);
+                            if (concept.getDisplay() == null) {
+                                value = getLabelValue(rubric.getLabel().get(0));
+                                concept.setDisplay(value);
+                                log.debug("For code: " + c.getCode() + " display: " + displayRubric
+                                    + " was not found. Falling back to: " + fallBackDisplayRubric);
+                            }
 
                         } else if (rkind.getName().equals(definitionRubric)) {
                                 final String value;
