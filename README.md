@@ -23,7 +23,8 @@ The following options are available:
 | Parameter                | Type        | Description   |
 | :----------------------- | :---------- |:------------- |
 | -content                 | string      | The extent of the content in this resource. Valid values are not-present, example, fragment, complete and supplement. Defaults to complete. The actual value does not affect the output of the transformation. |
-| -d                       | string      | Indicates which ClaML rubric contains the concepts' displays. Default is 'preferred'. |
+| -d                       | string      | Indicates which ClaML rubric contains the concepts' displays. Default is 'preferred'.
+| -dFallback               | string      | Indicates which ClaML rubric contains the concepts' displays to fallback to if -d was not found.|
 | -definition              | string      | Indicates which ClaML rubric contains the concepts' definitions. Default is 'definition'. |
 | -designations            | string      | Comma-separated list of ClaML rubrics that contain the concepts' synonyms. |
 | -excludeClassKinds       | string      | Comma-separated list of class kinds to exclude. |
@@ -37,10 +38,10 @@ The following options are available:
 
 ### Examples
 
-The ICD-10-GM classification was transformed using the following command:
+The ICD-10-GM classification was transformed with the following command, using `preferredLong` as display where available. Fallback for display was set to `preferred`:
 
 ```
-java -jar fhir-claml-0.0.1-SNAPSHOT.jar -i icd10gm2020syst_claml_20190920.xml -designations preferredLong -o codesystem-icd10gm-2020.json -id icd10gm2020 -url http://hl7.org/fhir/sid/icd-10-gm -valueset http://hl7.org/fhir/sid/icd-10-gm/vs
+java -jar fhir-claml-0.0.1-SNAPSHOT.jar -i icd10gm2020syst_claml_20190920.xml -d preferredLong -dFallback preferred -o codesystem-icd10gm-2020.json -id icd10gm2020 -url http://hl7.org/fhir/sid/icd-10-gm -valueset http://hl7.org/fhir/sid/icd-10-gm/vs
 ```
 
 ### Known Issues

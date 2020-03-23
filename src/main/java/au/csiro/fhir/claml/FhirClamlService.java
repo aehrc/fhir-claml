@@ -69,6 +69,7 @@ public class FhirClamlService {
 
     String claml2fhir(File clamlFile,
             String displayRubric,
+            String fallBackDisplayRubric,
             String definitionRubric,
             List<String> designationRubrics,
             List<String> excludeClassKind,
@@ -228,6 +229,15 @@ public class FhirClamlService {
                             value = getLabelValue(rubric.getLabel().get(0));
                             concept.setDisplay(value);
 
+                        } else if (fallBackDisplayRubric != null && rkind.getName().equals(fallBackDisplayRubric)) {
+                            final String value;
+                            if (rubric.getLabel().size() > 1) {
+                                log.warn("Found more than one label on display rubric for code " + c.getCode());
+                            }
+                            log.info("display: "+ displayRubric + "not found. Falling back to: " + fallBackDisplayRubric);
+                            value = getLabelValue(rubric.getLabel().get(0));
+                            concept.setDisplay(value);
+
                         } else if (rkind.getName().equals(definitionRubric)) {
                                 final String value;
                                 if (rubric.getLabel().size() > 1) {
@@ -280,7 +290,6 @@ public class FhirClamlService {
 
             cs.setCount(count);
 
-            output.getParentFile().mkdirs();
             context.newJsonParser().encodeResourceToWriter(cs, new FileWriter(output));
 
 
