@@ -292,7 +292,7 @@ public class FhirClamlService {
             }
 
             cs.setCount(count);
-
+	    output.getParentFile().mkdirs();
             context.newJsonParser().encodeResourceToWriter(cs, new FileWriter(output));
 
 
