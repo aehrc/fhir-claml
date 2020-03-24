@@ -68,6 +68,9 @@ public class Application implements CommandLineRunner {
 		options.addOption("d", "display", true, "Indicates which ClaML rubric contains the "
 				+ "concepts' displays. Default is 'preferred'.");
 
+		options.addOption("dFallback", true, "Indicates which ClaML rubric contains the "
+				+ "concepts' displays fallback. This display will be used if a rubric for the display option on the current concept doesn't exist ");
+
 		options.addOption("definition", true, "Indicates which ClaML rubric contains the "
 				+ "concepts' definitions. Default is 'definition'");
 
@@ -161,6 +164,7 @@ public class Application implements CommandLineRunner {
 				List<String> excludeClassKinds = excludeClassKindsOptions != null ? Arrays.asList(excludeClassKindsOptions) : Collections.emptyList();
 				fhirClamlController.claml2fhir(new File(line.getOptionValue("input")),
 						line.getOptionValue("d"),
+						line.getOptionValue("dFallback"),
 						line.getOptionValue("definition"),
 						designations,
 						excludeClassKinds,
