@@ -2,12 +2,14 @@ package au.csiro.fhir.claml;
 
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -16,6 +18,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.sax.SAXSource;
 
+import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.CodeSystem;
 import org.hl7.fhir.r4.model.CodeSystem.CodeSystemContentMode;
 import org.hl7.fhir.r4.model.CodeSystem.CodeSystemHierarchyMeaning;
@@ -28,15 +31,12 @@ import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Enumerations.PublicationStatus;
 import org.hl7.fhir.r4.model.StringType;
-import org.hl7.fhir.exceptions.FHIRException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.SAXNotRecognizedException;
-import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.XMLReader;
 
 import au.csiro.fhir.claml.model.claml.ClaML;
@@ -68,7 +68,7 @@ public class FhirClamlService {
     private static final Logger log = LoggerFactory.getLogger(FhirClamlService.class);
 
     String claml2fhir(File clamlFile,
-            String displayRubric,
+            List<String> displayRubrics,
             String definitionRubric,
             List<String> designationRubrics,
             List<String> excludeClassKind,
@@ -81,8 +81,9 @@ public class FhirClamlService {
             File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
 
     	// Default values
-    	if (displayRubric == null) {
-    		displayRubric = "preferred";
+    	if (displayRubrics == null || displayRubrics.isEmpty()) {
+    		displayRubrics = new ArrayList<String>();
+    		displayRubrics.add("preferred");
     	}
     	if (definitionRubric == null) {
     		definitionRubric = "definition";
@@ -171,7 +172,7 @@ public class FhirClamlService {
             cs.addProperty().setCode("kind").setType(PropertyType.CODE);
             for (RubricKind rk : claml.getRubricKinds().getRubricKind()) {
                 if (! definitionRubric.equals(rk.getName()) &&
-                        !displayRubric.equals(rk.getName()) &&
+                        !displayRubrics.contains(rk.getName()) &&
                         !designationRubrics.contains(rk.getName())) {
                     PropertyComponent p = cs.addProperty();
                     p.setCode(rk.getName());
@@ -216,18 +217,21 @@ public class FhirClamlService {
                 for (SuperClass sup : c.getSuperClass()) {
                     concept.addProperty().setCode("parent").setValue(new CodeType(sup.getCode()));
                 }
+                Map<String,List<Rubric>> displayRubricValues = new HashMap<>();
                 for (Rubric rubric : c.getRubric()) {
                     Object kind = rubric.getKind();
                     if (kind instanceof RubricKind) {
                         RubricKind rkind = (RubricKind) kind;
-                        if (rkind.getName().equals(displayRubric)) {
+                        if (displayRubrics.contains(rkind.getName())) {
                             final String value;
                             if (rubric.getLabel().size() > 1) {
-                                log.warn("Found more than one label on display rubric for code " + c.getCode());
+                                log.warn("Found more than one label on display rubric " + rkind.getName() + " for code " + c.getCode());
                             }
                             value = getLabelValue(rubric.getLabel().get(0));
-                            concept.setDisplay(value);
-
+                            if (!displayRubricValues.containsKey(rkind.getName())) {
+                            	displayRubricValues.put(rkind.getName(), new ArrayList<>());
+                            }
+                            displayRubricValues.get(rkind.getName()).add(rubric);
                         } else if (rkind.getName().equals(definitionRubric)) {
                                 final String value;
                                 if (rubric.getLabel().size() > 1) {
@@ -237,17 +241,7 @@ public class FhirClamlService {
                                 concept.setDefinition(value);
 
                         } else if (designationRubrics.contains(rkind.getName())) {
-                            for (Label l : rubric.getLabel()) {
-                                String v = getLabelValue(l);
-                                if (v != null && v.length() > 0) {
-                                    ConceptDefinitionDesignationComponent desig = concept.addDesignation();
-                                    desig.setUse(new Coding().setCode(rkind.getName()));
-                                    desig.setValue(v);
-                                    desig.setLanguage(l.getLang());
-                                } else {
-                                    log.warn("Skipping empty label for rubric " + rubric.getId());
-                                }
-                            }
+                            addDesignationsForRubric(concept, rubric);
                         } else {
                             for (Label l : rubric.getLabel()) {
                                 String v = getLabelValue(l);
@@ -261,6 +255,35 @@ public class FhirClamlService {
                     } else {
                         log.warn("Unexpected rubric kind " + kind);
                     }
+                }
+                
+                for (String dr : displayRubrics) {
+                	if (!displayRubricValues.containsKey(dr)) {
+                		continue;
+                	}
+            		List<Rubric> values = displayRubricValues.get(dr);
+                	if (!concept.hasDisplay()) {
+                		if (values.size() > 1) {
+                			log.warn("Found multiple display rubrics " + dr + " for code " + c.getCode());
+                		}
+                		Rubric rubric = values.get(0);
+                        String value = getLabelValue(rubric.getLabel().get(0));
+
+                		concept.setDisplay(value);
+                		if (rubric.getLabel().size() > 1) {
+                			if (log.isWarnEnabled()) {
+                                log.warn("Found more than one label on display rubric " + dr + " for code " + c.getCode());
+                			}
+                			for (int i = 1; i < values.size(); i++) {
+                				addDesignationForLabel(concept, rubric, (RubricKind) rubric.getKind(), rubric.getLabel().get(i));
+                			}
+                		}
+                	} else {
+                		// We've already got a display, dump everything else as a designation
+                		for (Rubric r : values) {
+                			addDesignationsForRubric(concept, r);
+                		}
+                	}
                 }
 
                 if (!concept.hasCode()) {
@@ -280,7 +303,9 @@ public class FhirClamlService {
 
             cs.setCount(count);
 
-            output.getParentFile().mkdirs();
+            if (output.getParentFile() != null) {
+            	output.getParentFile().mkdirs();
+            }
             context.newJsonParser().encodeResourceToWriter(cs, new FileWriter(output));
 
 
@@ -294,9 +319,32 @@ public class FhirClamlService {
 
     }
 
-    private String getClassKindName(Object kind) {
-        if (kind instanceof String) {
-            return (String) kind;
+	private void addDesignationsForRubric(ConceptDefinitionComponent concept, Rubric rubric) {
+		if (rubric.getKind() instanceof RubricKind) {
+			RubricKind rkind = (RubricKind) rubric.getKind();
+			for (Label l : rubric.getLabel()) {
+				addDesignationForLabel(concept, rubric, rkind, l);
+			}
+		} else {
+			log.warn("Unexpected rubric kind " + rubric.getKind());
+		}
+	}
+
+	private void addDesignationForLabel(ConceptDefinitionComponent concept, Rubric rubric, RubricKind rkind, Label l) {
+		String v = getLabelValue(l);
+		if (v != null && v.length() > 0) {
+			ConceptDefinitionDesignationComponent desig = concept.addDesignation();
+			desig.setUse(new Coding().setCode(rkind.getName()));
+			desig.setValue(v);
+			desig.setLanguage(l.getLang());
+		} else {
+			log.warn("Skipping empty label for rubric " + rubric.getId());
+		}
+	}
+
+	private String getClassKindName(Object kind) {
+		if (kind instanceof String) {
+			return (String) kind;
         } else if (kind instanceof ClassKind) {
             return ((ClassKind) kind).getName();
         } else {

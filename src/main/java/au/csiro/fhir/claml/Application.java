@@ -65,15 +65,33 @@ public class Application implements CommandLineRunner {
 				+ "are not-present, example, fragment, complete and supplement. Defaults to complete. The "
 				+ "actual value does not affect the output of the transformation.");
 
-		options.addOption("d", "display", true, "Indicates which ClaML rubric contains the "
-				+ "concepts' displays. Default is 'preferred'.");
+		options.addOption(
+				Option.builder("d")
+				.hasArgs()
+				.valueSeparator(',')
+				.longOpt("display")
+				.desc("A comma-separated list of ClaML rubric/s that might contain the "
+				+ "concepts' displays. The first populated rubric in the list that is present on a class will be "
+				+ "used as the concept's display text. Subsequent rubrics in the list will be used as designations. "
+				+ "Default is 'preferred'.")
+				.build());
 
 		options.addOption("definition", true, "Indicates which ClaML rubric contains the "
 				+ "concepts' definitions. Default is 'definition'");
 
-		options.addOption("designations", true, "Comma-separated list of ClaML rubrics that contain the concepts' synonyms.");
-
-		options.addOption("excludeClassKinds", true, "Comma-separated list of class kinds to exclude.");
+		options.addOption(Option.builder()
+				.longOpt("designations")
+				.hasArgs()
+				.valueSeparator(',')
+				.desc("Comma-separated list of ClaML rubrics that contain the concepts' synonyms.")
+				.build());
+		
+		options.addOption(Option.builder()
+				.longOpt("excludeClassKinds")
+				.hasArgs()
+				.valueSeparator(',')
+				.desc("Comma-separated list of class kinds to exclude.")
+				.build());
 
 		options.addOption("excludeKindlessClasses", true, "Exclude ClaML classes that do not have kinds (default: false)");
 
@@ -159,8 +177,10 @@ public class Application implements CommandLineRunner {
 				List<String> designations = designationOptions != null ? Arrays.asList(designationOptions) : Collections.emptyList();
 				String[] excludeClassKindsOptions = line.getOptionValues("excludeClassKind");
 				List<String> excludeClassKinds = excludeClassKindsOptions != null ? Arrays.asList(excludeClassKindsOptions) : Collections.emptyList();
+				String[] displayRubricOptions = line.getOptionValues("d");
+				List<String> displayRubrics = displayRubricOptions != null ? Arrays.asList(displayRubricOptions) : Collections.emptyList();
 				fhirClamlController.claml2fhir(new File(line.getOptionValue("input")),
-						line.getOptionValue("d"),
+						displayRubrics,
 						line.getOptionValue("definition"),
 						designations,
 						excludeClassKinds,
