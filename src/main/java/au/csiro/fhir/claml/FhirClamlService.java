@@ -68,17 +68,18 @@ public class FhirClamlService {
     private static final Logger log = LoggerFactory.getLogger(FhirClamlService.class);
 
     String claml2fhir(File clamlFile,
-            List<String> displayRubrics,
-            String definitionRubric,
-            List<String> designationRubrics,
-            List<String> excludeClassKind,
-            Boolean excludeKindlessClasses,
-            String hierarchyMeaning,
-            String id,
-            String url,
-            String valueSet,
-            String content,
-            File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
+                      List<String> displayRubrics,
+                      String definitionRubric,
+                      List<String> designationRubrics,
+                      List<String> excludeClassKind,
+                      Boolean excludeKindlessClasses,
+                      String hierarchyMeaning,
+                      String id,
+                      String url,
+                      String valueSet,
+                      String content,
+                      boolean versionNeeded,
+                      File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
 
     	// Default values
     	if (displayRubrics == null || displayRubrics.isEmpty()) {
@@ -147,6 +148,7 @@ public class FhirClamlService {
 			for  (Identifier ident : claml.getIdentifier()) {
                 cs.addIdentifier(new org.hl7.fhir.r4.model.Identifier().setSystem(ident.getAuthority()).setValue(ident.getUid()));
             }
+            cs.setVersionNeeded(versionNeeded);
 
             Title title = claml.getTitle();
             if (title != null) {
