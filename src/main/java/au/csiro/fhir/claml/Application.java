@@ -120,6 +120,9 @@ public class Application implements CommandLineRunner {
 
 		options.addOption("valueset", true, "The value set that represents the entire code system.");
 
+		options.addOption("versionNeeded", false, "Flag to indicate if the code system commits "
+				+ "to concept permanence across versions.");
+
 		// The following options are not yet supported
 		/*
 
@@ -160,9 +163,6 @@ public class Application implements CommandLineRunner {
 	    options.addOption("v", "version", true, "Business version. If this option is not specified "
 	        + "then the ClaML title.version attribute value will be used.");
 
-	    options.addOption("versionNeeded", false, "Flag to indicate if the code system commits "
-	        + "to concept permanence across versions.");
-
 		 */
 
 
@@ -190,6 +190,7 @@ public class Application implements CommandLineRunner {
 						line.getOptionValue("url"),
 						line.getOptionValue("valueSet"),
 						line.getOptionValue("content"),
+						line.hasOption("versionNeeded"),
 						new File(line.getOptionValue("output")));
 			} catch (Throwable t) {
 				System.out.println("There was a problem transforming the ClaML file into FHIR: " 
