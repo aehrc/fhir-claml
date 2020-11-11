@@ -34,6 +34,7 @@ The following options are available:
 | -o                       | string      | The output FHIR JSON file. |
 | -url                     | string      | Canonical identifier of the code system. |
 | -valueset                | string      | The value set that represents the entire code system. |
+| -versionNeeded           | none        | If present, sets the FHIR versionNeeded element of the code system to be 'true' |
 
 ### Examples
 
