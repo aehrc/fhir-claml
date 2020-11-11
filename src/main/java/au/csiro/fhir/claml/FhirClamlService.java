@@ -219,6 +219,9 @@ public class FhirClamlService {
                 for (SuperClass sup : c.getSuperClass()) {
                     concept.addProperty().setCode("parent").setValue(new CodeType(sup.getCode()));
                 }
+		for (Meta meta : c.getMeta()) {
+                    concept.addProperty().setCode(meta.getName()).setValue(new StringType(meta.getValue()));
+                }
                 Map<String,List<Rubric>> displayRubricValues = new HashMap<>();
                 for (Rubric rubric : c.getRubric()) {
                     Object kind = rubric.getKind();
