@@ -29,12 +29,13 @@ The following options are available:
 | -excludeClassKinds       | string      | Comma-separated list of class kinds to exclude. |
 | -excludeKindlessClasses  | boolean     | Exclude ClaML classes that do not have kinds (default: false). |
 | -help                    | none        | Print the help message. |
+| -hierarchyMeaning        | string      | The hierarchyMeaning of the code system. Allowable values are 'is-a', 'part-of', 'grouped-by', and 'classified-with'. Default is 'is-a'. |
 | -i                       | string      | The input ClaML file. |
 | -id                      | string      | The technical id of the code system. Required if using PUT to upload the resource to a FHIR server. |
 | -o                       | string      | The output FHIR JSON file. |
 | -url                     | string      | Canonical identifier of the code system. |
 | -valueset                | string      | The value set that represents the entire code system. |
-| -versionNeeded           | none        | If present, sets the FHIR versionNeeded element of the code system to be 'true' |
+| -versionNeeded           | none        | Flag to indicate if the code system commits to concept permanence across versions. |
 
 ### Examples
 
