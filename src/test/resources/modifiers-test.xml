@@ -1,13 +1,12 @@
 <?xml version="1.0"?>
-<!DOCTYPE ClaML SYSTEM "http://terminologies.eu/download/en14463-2007.dtd">
 <ClaML version="2.0.0">
 	<Title name="example" date="20070926" version="1">Example ClaML</Title>
 	<ClassKinds>
-		<Kind name="category"/>
-		<Kind name="chapter"/>
+		<ClassKind name="category"/>
+		<ClassKind name="chapter"/>
 	</ClassKinds>
 	<RubricKinds>
-		<Kind name="preferred"/>
+		<RubricKind name="preferred"/>
 	</RubricKinds>
 	<Modifier code="M">
 	    <SubClass code="M1"/>
@@ -35,6 +34,7 @@
         </Rubric>
     </ModifierClass>
     <ModifierClass code="N2" modifier="N">
+    <SuperClass code="N"/>
         <Meta name="excludeOnPrecedingModifier" value="M M1"/>    
         <Rubric kind="preferred">
             <Label xml:lang="en">Nodification 2</Label>
@@ -66,7 +66,7 @@
         <ModifiedBy code="M"/>
         <ModifiedBy code="N"/>
         <Rubric kind="preferred">
-            <Label xml:lang="en">chapter C</Label>
+            <Label xml:lang="en">chapter D</Label>
         </Rubric>
     </Class>
 	<Class code="A.1" kind="category">

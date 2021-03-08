@@ -63,6 +63,12 @@ public class ModifierTest {
         missingCodes.removeAll(codes);
         assertTrue("Missing codes " + missingCodes.stream().collect(Collectors.joining(",")), codes.containsAll(Arrays.asList(expectedCodes)));
         assertEquals(expectedCodes.length, codes.size());
+        
+        assertEquals("chapter D : Modification 2 : Nodification 1", cs.getConcept().stream().filter(cdc -> cdc.getCode().equals("DM2N1")).findFirst().get().getDisplay());
+        assertEquals(1, cs.getConcept().stream().filter(c -> c.getCode().equals("DM2N1")).findAny().get().getProperty().stream().filter(p->p.getCode().equals("parent")).count());
+        assertEquals("DM2", cs.getConcept().stream().filter(c -> c.getCode().equals("DM2N1")).findAny().get().getProperty().stream().filter(p->p.getCode().equals("parent")).findAny().get().getValueCodeType().getCode());
+        assertEquals("D", cs.getConcept().stream().filter(c -> c.getCode().equals("DM2")).findAny().get().getProperty().stream().filter(p->p.getCode().equals("parent")).findAny().get().getValueCodeType().getCode());
+
     }
 
 }

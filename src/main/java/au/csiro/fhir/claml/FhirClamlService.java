@@ -88,22 +88,6 @@ public class FhirClamlService {
                       boolean versionNeeded,
                       File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
 
-    	// Default values
-    	if (displayRubrics == null || displayRubrics.isEmpty()) {
-    		displayRubrics = new ArrayList<String>();
-    		displayRubrics.add("preferred");
-    	}
-    	if (definitionRubric == null) {
-    		definitionRubric = "definition";
-    	}
-    	if (hierarchyMeaning == null) {
-    		hierarchyMeaning = "is-a";
-    	}
-    	if (content == null) {
-    		content = "complete";
-    	}
-    	
-    	
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(ClaML.class);
 
@@ -148,6 +132,22 @@ public class FhirClamlService {
     protected CodeSystem claml2FhirObject(ClaML claml, List<String> displayRubrics, String definitionRubric,
             List<String> designationRubrics, List<String> excludeClassKind, Boolean excludeKindlessClasses,
             String hierarchyMeaning, String id, String url, String valueSet, String content, boolean versionNeeded) {
+        
+        // Default values
+        if (displayRubrics == null || displayRubrics.isEmpty()) {
+            displayRubrics = new ArrayList<String>();
+            displayRubrics.add("preferred");
+        }
+        if (definitionRubric == null) {
+            definitionRubric = "definition";
+        }
+        if (hierarchyMeaning == null) {
+            hierarchyMeaning = "is-a";
+        }
+        if (content == null) {
+            content = "complete";
+        }
+        
         CodeSystem cs = new CodeSystem();
         cs.setStatus(PublicationStatus.DRAFT);
         cs.setExperimental(true);
@@ -382,23 +382,24 @@ public class FhirClamlService {
 
                 // for each candidate
                 newCandidates = new ArrayList<>();
-                candidates: for (ConceptDefinitionComponent cand : candidates) {
-                    log.info("Applying modifier " + modBy.getCode() + " to " + cand.getCode());
+                for (ConceptDefinitionComponent cand : candidates) {
+                    log.info("Applying modifier " + modBy.getCode() + " with " + modifierClasses.get(modBy.getCode()).size() + " modifierClasses to " + cand.getCode());
 
                     // for each applicable ModifierClass
-                    for (ModifierClass modClass : modifierClasses.get(modBy.getCode())) {
+                    modifierClasses : for (ModifierClass modClass : modifierClasses.get(modBy.getCode())) {
+                        log.debug("Applying modifierClass " + modClass.getCode() + " to " + cand.getCode());
+
                         // If ModifiedBy.all == false and there is no ModifiedBy.ValidModifierClass for this modifier class, then skip it
                         if (!modBy.isAll() && !modBy.getValidModifierClass().stream().anyMatch(vmc -> vmc.getCode().equals(modClass.getCode()))) {
                             log.info("Skipping modifierClass " + modClass.getCode() + " due to missing ValidModifierClass on class " + cand.getCode());
 
-                            continue candidates;
+                            continue modifierClasses;
                         }
                         for ( Meta excl : modClass.getMeta().stream().filter(met -> met.getName().equals("excludeOnPrecedingModifier") ).collect(Collectors.toList())) {
                             String[] substrings = excl.getValue().split(" ");
-                            log.info("Found excludeOnPrecedingModifier " + excl.getValue());
                             if (substrings.length == 2 && cand.getCode().endsWith(substrings[1])) {
                                 log.info("Skipping modifierClass " + modClass.getCode() + " due to excludeOnPrecedingModifier on class " + cand.getCode());
-                                continue candidates;
+                                continue modifierClasses;
                             }
                         }
                         ConceptDefinitionComponent concept = cs.addConcept();
@@ -406,6 +407,7 @@ public class FhirClamlService {
                         newCandidates.add(concept);
                         //Set code to append modifierClass code
                         concept.setCode(cand.getCode() + modClass.getCode());
+                        log.debug("Creating code " + concept.getCode());
                         Map<String,List<Rubric>> displayRubricValues = new HashMap<>();
                         //Fix display to append modifierClass display
                         for (Rubric rubric : modClass.getRubric()) {
