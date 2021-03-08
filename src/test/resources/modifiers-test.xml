@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<!DOCTYPE ClaML SYSTEM "http://terminologies.eu/download/en14463-2007.dtd">
+<ClaML version="2.0.0">
+	<Title name="example" date="20070926" version="1">Example ClaML</Title>
+	<ClassKinds>
+		<Kind name="category"/>
+		<Kind name="chapter"/>
+	</ClassKinds>
+	<RubricKinds>
+		<Kind name="preferred"/>
+	</RubricKinds>
+	<Modifier code="M">
+	    <SubClass code="M1"/>
+	    <SubClass code="M2"/>
+	</Modifier>
+	<ModifierClass code="M1" modifier="M">
+	    <SuperClass code="M"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">Modification 1</Label>
+		</Rubric>
+	</ModifierClass>
+    <ModifierClass code="M2" modifier="M">
+        <Rubric kind="preferred">
+            <Label xml:lang="en">Modification 2</Label>
+        </Rubric>
+    </ModifierClass>
+    <Modifier code="N">
+        <SubClass code="N1"/>
+        <SubClass code="N2"/>
+    </Modifier>
+    <ModifierClass code="N1" modifier="N">
+        <SuperClass code="N"/>
+        <Rubric kind="preferred">
+            <Label xml:lang="en">Nodification 1</Label>
+        </Rubric>
+    </ModifierClass>
+    <ModifierClass code="N2" modifier="N">
+        <Meta name="excludeOnPrecedingModifier" value="M M1"/>    
+        <Rubric kind="preferred">
+            <Label xml:lang="en">Nodification 2</Label>
+        </Rubric>
+    </ModifierClass>
+	<Class code="A" kind="chapter">
+		<SubClass code="A.1" />
+		<SubClass code="A.2" />
+		<SubClass code="A.3"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">chapter A</Label>
+		</Rubric>
+	</Class>
+	<Class code="B" kind="chapter">
+	    <ModifiedBy all="true" code="M"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">chapter B</Label>
+		</Rubric>
+	</Class>
+	<Class code="C" kind="chapter">
+		<ModifiedBy all="false" code="M">
+			<ValidModifierClass code="M1" />
+		</ModifiedBy>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">chapter C</Label>
+		</Rubric>
+	</Class>
+    <Class code="D" kind="chapter">
+        <ModifiedBy code="M"/>
+        <ModifiedBy code="N"/>
+        <Rubric kind="preferred">
+            <Label xml:lang="en">chapter C</Label>
+        </Rubric>
+    </Class>
+	<Class code="A.1" kind="category">
+		<SuperClass code="A"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">example class</Label>
+		</Rubric>
+	</Class>
+	<Class code="A.2" kind="category">
+		<SuperClass code="A"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">example class</Label>
+		</Rubric>
+	</Class>
+	<Class code="A.3" kind="category">
+		<SuperClass code="A"/>
+		<Rubric kind="preferred">
+			<Label xml:lang="en">example class</Label>
+		</Rubric>
+	</Class>
+</ClaML>
