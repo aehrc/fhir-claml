@@ -34,7 +34,7 @@ The following options are available:
 | -id                      | string      | The technical id of the code system. Required if using PUT to upload the resource to a FHIR server. |
 | -o                       | string      | The output FHIR JSON file. |
 | -url                     | string      | Canonical identifier of the code system. |
-| -valueset                | string      | The value set that represents the entire code system. |
+| -valueSet                | string      | The value set that represents the entire code system. |
 | -versionNeeded           | none        | Flag to indicate if the code system commits to concept permanence across versions. |
 
 ### Examples
