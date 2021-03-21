@@ -47,7 +47,7 @@ java -jar fhir-claml-0.0.1-SNAPSHOT.jar -i icd10gm2020syst_claml_20190920.xml -d
 
 ### Known Issues
 
-* Modifiers are not currently supported
+* Inherited modifiers are not currently supported
 
 * In some Linux environments (including docker deployments), you may need to install some packages to properly support UTF-8 encodings. Andreas Streichardt provided these commands for inclusion in a Dockerfile to fix this (these can be adapted to Linux commands if you need):
 ```RUN apt-get update && apt-get install -y python3 git openjdk-11-jdk maven jq unzip locales
