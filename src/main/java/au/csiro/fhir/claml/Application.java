@@ -120,7 +120,7 @@ public class Application implements CommandLineRunner {
 
         options.addOption("url", true, "Canonical identifier of the code system.");
 
-        options.addOption("valueset", true, "The value set that represents the entire code system.");
+        options.addOption("valueSet", true, "The value set that represents the entire code system.");
 
         options.addOption("versionNeeded", false, "Flag to indicate if the code system commits "
                 + "to concept permanence across versions.");
