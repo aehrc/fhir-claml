@@ -45,6 +45,7 @@ import org.xml.sax.XMLReader;
 import au.csiro.fhir.claml.model.claml.ClaML;
 import au.csiro.fhir.claml.model.claml.Class;
 import au.csiro.fhir.claml.model.claml.ClassKind;
+import au.csiro.fhir.claml.model.claml.ExcludeModifier;
 import au.csiro.fhir.claml.model.claml.Fragment;
 import au.csiro.fhir.claml.model.claml.Identifier;
 import au.csiro.fhir.claml.model.claml.Label;
@@ -86,6 +87,7 @@ public class FhirClamlService {
                       String valueSet,
                       String content,
                       boolean versionNeeded,
+                      Boolean applyModifiers,
                       File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
 
         try {
@@ -111,7 +113,7 @@ public class FhirClamlService {
             ClaML claml = (ClaML) jaxbUnmarshaller.unmarshal(source);
 
             CodeSystem cs = claml2FhirObject(claml, displayRubrics, definitionRubric, designationRubrics, excludeClassKind,
-                    excludeKindlessClasses, hierarchyMeaning, id, url, valueSet, content, versionNeeded);
+                    excludeKindlessClasses, hierarchyMeaning, id, url, valueSet, content, versionNeeded, applyModifiers);
 
             if (output.getParentFile() != null) {
             	output.getParentFile().mkdirs();
@@ -131,7 +133,8 @@ public class FhirClamlService {
 
     protected CodeSystem claml2FhirObject(ClaML claml, List<String> displayRubrics, String definitionRubric,
             List<String> designationRubrics, List<String> excludeClassKind, Boolean excludeKindlessClasses,
-            String hierarchyMeaning, String id, String url, String valueSet, String content, boolean versionNeeded) {
+            String hierarchyMeaning, String id, String url, String valueSet, String content,
+            boolean versionNeeded, Boolean applyModifiers) {
         
         // Default values
         if (displayRubrics == null || displayRubrics.isEmpty()) {
@@ -225,6 +228,7 @@ public class FhirClamlService {
         
         Map<String,ConceptDefinitionComponent> concepts = new HashMap<>();
         Map<String,List<ModifiedBy>> modifiedBy = new HashMap<>();
+        Map<String,Set<ExcludeModifier>> excludeModifiers = new HashMap<>();
         Map<String,Set<String>> descendents = new HashMap<>();
 
         for (Class c : claml.getClazz()) {
@@ -363,6 +367,15 @@ public class FhirClamlService {
                 }
                 modifiedBy.get(c.getCode()).addAll(c.getModifiedBy());
             }
+            if (!c.getExcludeModifier().isEmpty()) {
+                if (!excludeModifiers.containsKey(c.getCode())) {
+                    excludeModifiers.put(c.getCode(), new HashSet<>());
+                }
+                if (log.isDebugEnabled()) {
+                    log.debug("Adding " + c.getExcludeModifier().size() + " modifier exclusions to class " + c.getCode());
+                }
+                excludeModifiers.get(c.getCode()).addAll(c.getExcludeModifier());
+            }
         }
         
         Map <String,Set<ModifierClass>> modifierClasses = new HashMap<>();
@@ -373,40 +386,46 @@ public class FhirClamlService {
             modifierClasses.get(modClass.getModifier()).add(modClass);
         }
         
-        for (String modifiedConcept : modifiedBy.keySet()) {
-            //Don't add modifiers to non-leaf classes
-            if (descendents.containsKey(modifiedConcept) && !modifiedBy.get(modifiedConcept).isEmpty() && !descendents.get(modifiedConcept).isEmpty()) {
-                if (log.isInfoEnabled()) {
-                    log.info("Modifiers are only applied to leaf classes. Skipping " + modifiedConcept);
+        if (applyModifiers) {
+            for (String modifiedConcept : modifiedBy.keySet()) {
+                //Don't add modifiers to non-leaf classes
+                if (descendents.containsKey(modifiedConcept) && !modifiedBy.get(modifiedConcept).isEmpty() && !descendents.get(modifiedConcept).isEmpty()) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Modifiers are only applied to leaf classes. Skipping " + modifiedConcept);
+                    }
+                    for (String desc : descendents.get(modifiedConcept)) {
+                        log.info("Applying modifiers to descendent " + desc + " of code " + modifiedConcept);
+                        applyModifiersToClass(desc, modifierClasses, modifiedBy.get(modifiedConcept), concepts, displayRubrics, excludeModifiers, cs, count);
+                    }
+                } else {
+                    count = applyModifiersToClass(modifiedConcept, modifierClasses, modifiedBy.get(modifiedConcept), concepts, displayRubrics, excludeModifiers, cs, count);
                 }
-                for (String desc : descendents.get(modifiedConcept)) {
-                    log.info("Applying modifiers to descendent " + desc + " of code " + modifiedConcept);
-                    applyModifiersToClass(desc, modifierClasses, modifiedBy.get(modifiedConcept), concepts, displayRubrics, cs, count);
-                }
-
-            } else {
-                count = applyModifiersToClass(modifiedConcept, modifierClasses, modifiedBy.get(modifiedConcept), concepts, displayRubrics, cs, count);
             }
-
-            //TODO Consider ExcludeModifier elements
         }
         
-
         cs.setCount(count);
         return cs;
     }
 
     private int applyModifiersToClass(String modifiedConcept, Map<String, Set<ModifierClass>> modifierClasses,
             List<ModifiedBy> modifiedBy, Map<String, ConceptDefinitionComponent> concepts,
-            List<String> displayRubrics, CodeSystem cs, Integer count) {
+            List<String> displayRubrics, Map<String, Set<ExcludeModifier>> excludeModifiers, CodeSystem cs, Integer count) {
         List<ConceptDefinitionComponent> candidates = new ArrayList<>();
         candidates.add(concepts.get(modifiedConcept));
         //Apply the modifiers in order to the modified concept
         List<ConceptDefinitionComponent> newCandidates = null;
 
+        modifiers : for (ModifiedBy modBy : modifiedBy) {
 
-        for (ModifiedBy modBy : modifiedBy) {
-
+            if (excludeModifiers.containsKey(modifiedConcept) && !excludeModifiers.get(modifiedConcept).isEmpty()) {
+                for (ExcludeModifier excludeMod : excludeModifiers.get(modifiedConcept)) {
+                    if (modBy.getCode().equals(excludeMod.getCode())) {
+                        log.info("Modifier " + modBy.getCode() + " is excluded for class " + modifiedConcept + " : Skipping");
+                        continue modifiers;
+                    }
+                }
+            }
+                
             // for each candidate
             newCandidates = new ArrayList<>();
             for (ConceptDefinitionComponent cand : candidates) {
@@ -429,11 +448,16 @@ public class FhirClamlService {
                             continue modifierClasses;
                         }
                     }
+                    String newCode = cand.getCode() + modClass.getCode();
+                    if (concepts.containsKey(newCode)) {
+                        log.warn("Code " + newCode + " already exists as a declared Class - skipping application of modifierClass " + modBy.getCode() + "::" + modClass.getCode() + " to code " + cand.getCode());
+                        continue modifierClasses;
+                    }
                     ConceptDefinitionComponent concept = cs.addConcept();
                     count++;
                     newCandidates.add(concept);
                     //Set code to append modifierClass code
-                    concept.setCode(cand.getCode() + modClass.getCode());
+                    concept.setCode(newCode);
                     log.debug("Creating code " + concept.getCode());
                     Map<String,List<Rubric>> displayRubricValues = new HashMap<>();
                     //Fix display to append modifierClass display

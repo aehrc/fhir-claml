@@ -22,6 +22,7 @@ The following options are available:
 
 | Parameter                | Type        | Description   |
 | :----------------------- | :---------- |:------------- |
+| -applyModifiers          | boolean     | Apply Modifiers (default: false) |
 | -content                 | string      | The extent of the content in this resource. Valid values are not-present, example, fragment, complete and supplement. Defaults to complete. The actual value does not affect the output of the transformation. |
 | -d                       | string      | Indicates which ClaML rubric contains the concepts' displays. Default is 'preferred'. |
 | -definition              | string      | Indicates which ClaML rubric contains the concepts' definitions. Default is 'definition'. |
@@ -48,6 +49,8 @@ java -jar fhir-claml-0.0.1-SNAPSHOT.jar -i icd10gm2020syst_claml_20190920.xml -d
 ### Known Issues
 
 * Inherited modifiers are not currently supported
+
+* UsageKinds and usage attributes (e.g. for +, * or ! suffixes in ICD) are not yet supported
 
 * In some Linux environments (including docker deployments), you may need to install some packages to properly support UTF-8 encodings. Andreas Streichardt provided these commands for inclusion in a Dockerfile to fix this (these can be adapted to Linux commands if you need):
 ```RUN apt-get update && apt-get install -y python3 git openjdk-11-jdk maven jq unzip locales
