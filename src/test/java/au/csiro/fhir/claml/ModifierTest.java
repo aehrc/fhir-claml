@@ -53,7 +53,7 @@ public class ModifierTest {
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         ClaML claml = (ClaML) jaxbUnmarshaller.unmarshal(source);
 
-        CodeSystem cs = controller.claml2FhirObject(claml, Collections.emptyList(), null, Collections.emptyList(), Collections.emptyList(), false, null, null, null, null, null, false);
+        CodeSystem cs = controller.claml2FhirObject(claml, Collections.emptyList(), null, Collections.emptyList(), Collections.emptyList(), false, null, null, null, null, null, false, true);
         Set<String> codes = cs.getConcept().stream().map(c -> c.getCode()).collect(Collectors.toSet());
 
         String[] expectedCodes = {"A", "A.1", "A.2", "A.3", "B", "C", "D", "BM1", "BM2", "CM1", "DM1", "DM1N1", "DM2", "DM2N1", "DM2N2" };

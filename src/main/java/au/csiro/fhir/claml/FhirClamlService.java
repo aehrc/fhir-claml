@@ -45,6 +45,7 @@ import org.xml.sax.XMLReader;
 import au.csiro.fhir.claml.model.claml.ClaML;
 import au.csiro.fhir.claml.model.claml.Class;
 import au.csiro.fhir.claml.model.claml.ClassKind;
+import au.csiro.fhir.claml.model.claml.ExcludeModifier;
 import au.csiro.fhir.claml.model.claml.Fragment;
 import au.csiro.fhir.claml.model.claml.Identifier;
 import au.csiro.fhir.claml.model.claml.Label;
@@ -86,6 +87,7 @@ public class FhirClamlService {
                       String valueSet,
                       String content,
                       boolean versionNeeded,
+                      Boolean applyModifiers,
                       File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
 
         try {
@@ -111,7 +113,7 @@ public class FhirClamlService {
             ClaML claml = (ClaML) jaxbUnmarshaller.unmarshal(source);
 
             CodeSystem cs = claml2FhirObject(claml, displayRubrics, definitionRubric, designationRubrics, excludeClassKind,
-                    excludeKindlessClasses, hierarchyMeaning, id, url, valueSet, content, versionNeeded);
+                    excludeKindlessClasses, hierarchyMeaning, id, url, valueSet, content, versionNeeded, applyModifiers);
 
             if (output.getParentFile() != null) {
             	output.getParentFile().mkdirs();
@@ -131,7 +133,8 @@ public class FhirClamlService {
 
     protected CodeSystem claml2FhirObject(ClaML claml, List<String> displayRubrics, String definitionRubric,
             List<String> designationRubrics, List<String> excludeClassKind, Boolean excludeKindlessClasses,
-            String hierarchyMeaning, String id, String url, String valueSet, String content, boolean versionNeeded) {
+            String hierarchyMeaning, String id, String url, String valueSet, String content,
+            boolean versionNeeded, Boolean applyModifiers) {
         
         // Default values
         if (displayRubrics == null || displayRubrics.isEmpty()) {
@@ -221,10 +224,11 @@ public class FhirClamlService {
             }
         }
 
-        int count = 0;
+        Integer count = 0;
         
         Map<String,ConceptDefinitionComponent> concepts = new HashMap<>();
         Map<String,List<ModifiedBy>> modifiedBy = new HashMap<>();
+        Map<String,Set<ExcludeModifier>> excludeModifiers = new HashMap<>();
         Map<String,Set<String>> descendents = new HashMap<>();
 
         for (Class c : claml.getClazz()) {
@@ -281,7 +285,7 @@ public class FhirClamlService {
                         if (rubric.getLabel().size() > 1) {
                             log.warn("Found more than one label on display rubric " + rkind.getName() + " for code " + c.getCode());
                         }
-                        value = getLabelValue(rubric.getLabel().get(0));
+                        value = getLabelValue(rubric.getLabel().get(0)).trim();
                         if (!displayRubricValues.containsKey(rkind.getName())) {
                         	displayRubricValues.put(rkind.getName(), new ArrayList<>());
                         }
@@ -291,14 +295,14 @@ public class FhirClamlService {
                             if (rubric.getLabel().size() > 1) {
                                 log.warn("Found more than one label on definition rubric for code " + c.getCode());
                             }
-                            value = getLabelValue(rubric.getLabel().get(0));
+                            value = getLabelValue(rubric.getLabel().get(0)).trim();
                             concept.setDefinition(value);
 
                     } else if (designationRubrics.contains(rkind.getName())) {
                         addDesignationsForRubric(concept, rubric);
                     } else {
                         for (Label l : rubric.getLabel()) {
-                            String v = getLabelValue(l);
+                            String v = getLabelValue(l).trim();
                             if (v != null && v.length() > 0) {
                                 ConceptPropertyComponent prop = concept.addProperty();
                                 prop.setCode(rkind.getName());
@@ -321,7 +325,7 @@ public class FhirClamlService {
             			log.warn("Found multiple display rubrics " + dr + " for code " + c.getCode());
             		}
             		Rubric rubric = values.get(0);
-                    String value = getLabelValue(rubric.getLabel().get(0));
+                    String value = getLabelValue(rubric.getLabel().get(0)).trim();
 
             		concept.setDisplay(value);
             		if (rubric.getLabel().size() > 1) {
@@ -363,6 +367,15 @@ public class FhirClamlService {
                 }
                 modifiedBy.get(c.getCode()).addAll(c.getModifiedBy());
             }
+            if (!c.getExcludeModifier().isEmpty()) {
+                if (!excludeModifiers.containsKey(c.getCode())) {
+                    excludeModifiers.put(c.getCode(), new HashSet<>());
+                }
+                if (log.isDebugEnabled()) {
+                    log.debug("Adding " + c.getExcludeModifier().size() + " modifier exclusions to class " + c.getCode());
+                }
+                excludeModifiers.get(c.getCode()).addAll(c.getExcludeModifier());
+            }
         }
         
         Map <String,Set<ModifierClass>> modifierClasses = new HashMap<>();
@@ -373,92 +386,123 @@ public class FhirClamlService {
             modifierClasses.get(modClass.getModifier()).add(modClass);
         }
         
-        for (String modifiedConcept : modifiedBy.keySet()) {
-            List<ConceptDefinitionComponent> candidates = new ArrayList<>();
-            candidates.add(concepts.get(modifiedConcept));
-            //Apply the modifiers in order to the modified concept
-            List<ConceptDefinitionComponent> newCandidates = null;
-            for (ModifiedBy modBy : modifiedBy.get(modifiedConcept)) {
-
-                // for each candidate
-                newCandidates = new ArrayList<>();
-                for (ConceptDefinitionComponent cand : candidates) {
-                    log.info("Applying modifier " + modBy.getCode() + " with " + modifierClasses.get(modBy.getCode()).size() + " modifierClasses to " + cand.getCode());
-
-                    // for each applicable ModifierClass
-                    modifierClasses : for (ModifierClass modClass : modifierClasses.get(modBy.getCode())) {
-                        log.debug("Applying modifierClass " + modClass.getCode() + " to " + cand.getCode());
-
-                        // If ModifiedBy.all == false and there is no ModifiedBy.ValidModifierClass for this modifier class, then skip it
-                        if (!modBy.isAll() && !modBy.getValidModifierClass().stream().anyMatch(vmc -> vmc.getCode().equals(modClass.getCode()))) {
-                            log.info("Skipping modifierClass " + modClass.getCode() + " due to missing ValidModifierClass on class " + cand.getCode());
-
-                            continue modifierClasses;
-                        }
-                        for ( Meta excl : modClass.getMeta().stream().filter(met -> met.getName().equals("excludeOnPrecedingModifier") ).collect(Collectors.toList())) {
-                            String[] substrings = excl.getValue().split(" ");
-                            if (substrings.length == 2 && cand.getCode().endsWith(substrings[1])) {
-                                log.info("Skipping modifierClass " + modClass.getCode() + " due to excludeOnPrecedingModifier on class " + cand.getCode());
-                                continue modifierClasses;
-                            }
-                        }
-                        ConceptDefinitionComponent concept = cs.addConcept();
-                        count++;
-                        newCandidates.add(concept);
-                        //Set code to append modifierClass code
-                        concept.setCode(cand.getCode() + modClass.getCode());
-                        log.debug("Creating code " + concept.getCode());
-                        Map<String,List<Rubric>> displayRubricValues = new HashMap<>();
-                        //Fix display to append modifierClass display
-                        for (Rubric rubric : modClass.getRubric()) {
-                            Object kind = rubric.getKind();
-                            if (kind instanceof RubricKind) {
-                                RubricKind rkind = (RubricKind) kind;
-                                if (displayRubrics.contains(rkind.getName())) {
-                                    if (rubric.getLabel().size() > 1) {
-                                        log.warn("Found more than one label on display rubric " + rkind.getName() + " for code " + modClass.getCode());
-                                    }
-                                    if (!displayRubricValues.containsKey(rkind.getName())) {
-                                        displayRubricValues.put(rkind.getName(), new ArrayList<>());
-                                    }
-                                    displayRubricValues.get(rkind.getName()).add(rubric);
-                                }
-                            }
-                        }
-                        for (String dr : displayRubrics) {
-                            if (!displayRubricValues.containsKey(dr)) {
-                                continue;
-                            }
-                            List<Rubric> values = displayRubricValues.get(dr);
-                            if (values.size() > 1) {
-                                log.warn("Found multiple display rubrics " + dr + " for modifierClass " + modClass.getCode());
-                            }
-                            Rubric rubric = values.get(0);
-                            String value = getLabelValue(rubric.getLabel().get(0));
-
-                            concept.setDisplay(cand.getDisplay() + " : " + value);
-                            if (rubric.getLabel().size() > 1) {
-                                if (log.isWarnEnabled()) {
-                                    log.warn("Found more than one label on display rubric " + dr + " for code " + modClass.getCode());
-                                }
-                            }
-                        }
-                        // Remove old parent/child links
-//                            concept.getProperty().removeIf(p -> p.getCode().equals("parent") || p.getCode().equals("child"));
-                        concept.addProperty().setCode("parent").setValue(new CodeType(cand.getCode()));
+        if (applyModifiers) {
+            for (String modifiedConcept : modifiedBy.keySet()) {
+                //Don't add modifiers to non-leaf classes
+                if (descendents.containsKey(modifiedConcept) && !modifiedBy.get(modifiedConcept).isEmpty() && !descendents.get(modifiedConcept).isEmpty()) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Modifiers are only applied to leaf classes. Skipping " + modifiedConcept);
                     }
+                    for (String desc : descendents.get(modifiedConcept)) {
+                        log.info("Applying modifiers to descendent " + desc + " of code " + modifiedConcept);
+                        applyModifiersToClass(desc, modifierClasses, modifiedBy.get(modifiedConcept), concepts, displayRubrics, excludeModifiers, cs, count);
+                    }
+                } else {
+                    count = applyModifiersToClass(modifiedConcept, modifierClasses, modifiedBy.get(modifiedConcept), concepts, displayRubrics, excludeModifiers, cs, count);
                 }
-                candidates = newCandidates;
-
             }
-            
-            //TODO Apply to all descendents of the concept
-            //TODO Consider ExcludeModifier elements
         }
         
-
         cs.setCount(count);
         return cs;
+    }
+
+    private int applyModifiersToClass(String modifiedConcept, Map<String, Set<ModifierClass>> modifierClasses,
+            List<ModifiedBy> modifiedBy, Map<String, ConceptDefinitionComponent> concepts,
+            List<String> displayRubrics, Map<String, Set<ExcludeModifier>> excludeModifiers, CodeSystem cs, Integer count) {
+        List<ConceptDefinitionComponent> candidates = new ArrayList<>();
+        candidates.add(concepts.get(modifiedConcept));
+        //Apply the modifiers in order to the modified concept
+        List<ConceptDefinitionComponent> newCandidates = null;
+
+        modifiers : for (ModifiedBy modBy : modifiedBy) {
+
+            if (excludeModifiers.containsKey(modifiedConcept) && !excludeModifiers.get(modifiedConcept).isEmpty()) {
+                for (ExcludeModifier excludeMod : excludeModifiers.get(modifiedConcept)) {
+                    if (modBy.getCode().equals(excludeMod.getCode())) {
+                        log.info("Modifier " + modBy.getCode() + " is excluded for class " + modifiedConcept + " : Skipping");
+                        continue modifiers;
+                    }
+                }
+            }
+                
+            // for each candidate
+            newCandidates = new ArrayList<>();
+            for (ConceptDefinitionComponent cand : candidates) {
+                log.info("Applying modifier " + modBy.getCode() + " with " + modifierClasses.get(modBy.getCode()).size() + " modifierClasses to " + cand.getCode());
+
+                // for each applicable ModifierClass
+                modifierClasses : for (ModifierClass modClass : modifierClasses.get(modBy.getCode())) {
+                    log.debug("Applying modifierClass " + modClass.getCode() + " to " + cand.getCode());
+
+                    // If ModifiedBy.all == false and there is no ModifiedBy.ValidModifierClass for this modifier class, then skip it
+                    if (!modBy.isAll() && !modBy.getValidModifierClass().stream().anyMatch(vmc -> vmc.getCode().equals(modClass.getCode()))) {
+                        log.info("Skipping modifierClass " + modClass.getCode() + " due to missing ValidModifierClass on class " + cand.getCode());
+
+                        continue modifierClasses;
+                    }
+                    for ( Meta excl : modClass.getMeta().stream().filter(met -> met.getName().equals("excludeOnPrecedingModifier") ).collect(Collectors.toList())) {
+                        String[] substrings = excl.getValue().split(" ");
+                        if (substrings.length == 2 && cand.getCode().endsWith(substrings[1])) {
+                            log.info("Skipping modifierClass " + modClass.getCode() + " due to excludeOnPrecedingModifier on class " + cand.getCode());
+                            continue modifierClasses;
+                        }
+                    }
+                    String newCode = cand.getCode() + modClass.getCode();
+                    if (concepts.containsKey(newCode)) {
+                        log.warn("Code " + newCode + " already exists as a declared Class - skipping application of modifierClass " + modBy.getCode() + "::" + modClass.getCode() + " to code " + cand.getCode());
+                        continue modifierClasses;
+                    }
+                    ConceptDefinitionComponent concept = cs.addConcept();
+                    count++;
+                    newCandidates.add(concept);
+                    //Set code to append modifierClass code
+                    concept.setCode(newCode);
+                    log.debug("Creating code " + concept.getCode());
+                    Map<String,List<Rubric>> displayRubricValues = new HashMap<>();
+                    //Fix display to append modifierClass display
+                    for (Rubric rubric : modClass.getRubric()) {
+                        Object kind = rubric.getKind();
+                        if (kind instanceof RubricKind) {
+                            RubricKind rkind = (RubricKind) kind;
+                            if (displayRubrics.contains(rkind.getName())) {
+                                if (rubric.getLabel().size() > 1) {
+                                    log.warn("Found more than one label on display rubric " + rkind.getName() + " for code " + modClass.getCode());
+                                }
+                                if (!displayRubricValues.containsKey(rkind.getName())) {
+                                    displayRubricValues.put(rkind.getName(), new ArrayList<>());
+                                }
+                                displayRubricValues.get(rkind.getName()).add(rubric);
+                            }
+                        }
+                    }
+                    for (String dr : displayRubrics) {
+                        if (!displayRubricValues.containsKey(dr)) {
+                            continue;
+                        }
+                        List<Rubric> values = displayRubricValues.get(dr);
+                        if (values.size() > 1) {
+                            log.warn("Found multiple display rubrics " + dr + " for modifierClass " + modClass.getCode());
+                        }
+                        Rubric rubric = values.get(0);
+                        String value = getLabelValue(rubric.getLabel().get(0)).trim();
+
+                        concept.setDisplay(cand.getDisplay() + " : " + value);
+                        if (rubric.getLabel().size() > 1) {
+                            if (log.isWarnEnabled()) {
+                                log.warn("Found more than one label on display rubric " + dr + " for code " + modClass.getCode());
+                            }
+                        }
+                    }
+                    // Remove old parent/child links
+                    //                            concept.getProperty().removeIf(p -> p.getCode().equals("parent") || p.getCode().equals("child"));
+                    concept.addProperty().setCode("parent").setValue(new CodeType(cand.getCode()));
+                }
+            }
+            candidates = newCandidates;
+
+        }
+        return count;
     }
 
 	private void addDesignationsForRubric(ConceptDefinitionComponent concept, Rubric rubric) {
@@ -473,10 +517,10 @@ public class FhirClamlService {
 	}
 
 	private void addDesignationForLabel(ConceptDefinitionComponent concept, Rubric rubric, RubricKind rkind, Label l) {
-		String v = getLabelValue(l);
+		String v = getLabelValue(l).trim();
 		if (v != null && v.length() > 0) {
 			ConceptDefinitionDesignationComponent desig = concept.addDesignation();
-			desig.setUse(new Coding().setCode(rkind.getName()));
+			desig.setUse(new Coding().setDisplay(rkind.getName()));
 			desig.setValue(v);
 			desig.setLanguage(l.getLang());
 		} else {

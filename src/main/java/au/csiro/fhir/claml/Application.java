@@ -64,6 +64,8 @@ public class Application implements CommandLineRunner {
         options.addOption("content", true, "The extent of the content in this resource. Valid values "
                 + "are not-present, example, fragment, complete and supplement. Defaults to complete. The "
                 + "actual value does not affect the output of the transformation.");
+        
+        options.addOption("applyModifiers", true, "Apply Modifiers (default: false)");
 
         options.addOption(
                 Option.builder("d")
@@ -193,6 +195,7 @@ public class Application implements CommandLineRunner {
                         line.getOptionValue("valueSet"),
                         line.getOptionValue("content"),
                         line.hasOption("versionNeeded"),
+                        Boolean.parseBoolean(line.getOptionValue("applyModifiers")),
                         new File(line.getOptionValue("output")));
             } catch (Throwable t) {
                 System.out.println("There was a problem transforming the ClaML file into FHIR: " 
