@@ -32,8 +32,10 @@ The following options are available:
 | -help                    | none        | Print the help message. |
 | -hierarchyMeaning        | string      | The hierarchyMeaning of the code system. Allowable values are 'is-a', 'part-of', 'grouped-by', and 'classified-with'. Default is 'is-a'. |
 | -i                       | string      | The input ClaML file. |
+| -identifier              | string      | Comma-separated list of additional business identifiers. Each business identifer has the format <code>\[system\]&#124;\[value\]</code>.|
 | -id                      | string      | The technical id of the code system. Required if using PUT to upload the resource to a FHIR server. |
 | -o                       | string      | The output FHIR JSON file. |
+| -t                       | string      | The title to use for the resultant CodeSystem, defaults to the calculated value for name if not provided |
 | -url                     | string      | Canonical identifier of the code system. |
 | -valueSet                | string      | The value set that represents the entire code system. |
 | -versionNeeded           | none        | Flag to indicate if the code system commits to concept permanence across versions. |
