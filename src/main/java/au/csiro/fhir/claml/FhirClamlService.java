@@ -21,6 +21,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.sax.SAXSource;
 
+import org.apache.logging.log4j.util.Strings;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.CodeSystem;
 import org.hl7.fhir.r4.model.CodeSystem.CodeSystemContentMode;
@@ -52,7 +53,6 @@ import au.csiro.fhir.claml.model.claml.Label;
 import au.csiro.fhir.claml.model.claml.ListItem;
 import au.csiro.fhir.claml.model.claml.Meta;
 import au.csiro.fhir.claml.model.claml.ModifiedBy;
-import au.csiro.fhir.claml.model.claml.Modifier;
 import au.csiro.fhir.claml.model.claml.ModifierClass;
 import au.csiro.fhir.claml.model.claml.Para;
 import au.csiro.fhir.claml.model.claml.Reference;
@@ -88,6 +88,8 @@ public class FhirClamlService {
                       String content,
                       boolean versionNeeded,
                       Boolean applyModifiers,
+                      String identifiers,
+                      String title,
                       File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
 
         try {
@@ -113,7 +115,7 @@ public class FhirClamlService {
             ClaML claml = (ClaML) jaxbUnmarshaller.unmarshal(source);
 
             CodeSystem cs = claml2FhirObject(claml, displayRubrics, definitionRubric, designationRubrics, excludeClassKind,
-                    excludeKindlessClasses, hierarchyMeaning, id, url, valueSet, content, versionNeeded, applyModifiers);
+                    excludeKindlessClasses, hierarchyMeaning, id, url, valueSet, content, versionNeeded, applyModifiers, identifiers, title);
 
             if (output.getParentFile() != null) {
             	output.getParentFile().mkdirs();
@@ -132,9 +134,9 @@ public class FhirClamlService {
     }
 
     protected CodeSystem claml2FhirObject(ClaML claml, List<String> displayRubrics, String definitionRubric,
-            List<String> designationRubrics, List<String> excludeClassKind, Boolean excludeKindlessClasses,
-            String hierarchyMeaning, String id, String url, String valueSet, String content,
-            boolean versionNeeded, Boolean applyModifiers) {
+        List<String> designationRubrics, List<String> excludeClassKind, Boolean excludeKindlessClasses,
+        String hierarchyMeaning, String id, String url, String valueSet, String content,
+        boolean versionNeeded, Boolean applyModifiers, String identifiers, String titleParameter) {
         
         // Default values
         if (displayRubrics == null || displayRubrics.isEmpty()) {
@@ -174,11 +176,29 @@ public class FhirClamlService {
             cs.setValueSet(valueSet);
         }
 
-        if (claml.getIdentifier().size() > 1) {
-            log.warn("Multiple identifiers not currently supported by FHIR Code Systems");
-        }
         for  (Identifier ident : claml.getIdentifier()) {
             cs.addIdentifier(new org.hl7.fhir.r4.model.Identifier().setSystem(ident.getAuthority()).setValue(ident.getUid()));
+        }
+        if (Strings.isNotBlank(identifiers)) {
+            for (String identifier : identifiers.split(",")) {
+                if (identifier.contains("|")) {
+                    String[] identifierSplit = identifier.split("\\|");
+                    if (identifierSplit.length == 2) {
+                        String system = identifierSplit[0].trim();
+                        String value = identifierSplit[1].trim();
+                        if (system.isBlank() || value.isBlank()) {
+                            log.warn("Input identifier " + identifier + " cannot be used - specified system and/or value are blank");
+                        } else {
+                            log.info("Added " + identifier);
+                            cs.addIdentifier(new org.hl7.fhir.r4.model.Identifier().setSystem(system).setValue(value));
+                        }
+                    } else {
+                        log.warn("Input identifier " + identifier + " cannot be parsed - it did not have exactly two elements when split by the | symbol.");
+                    }
+                } else {
+                    log.warn("Input identifier " + identifier + " cannot be parsed - it must contain a | to divide the system from the value.");
+                }
+            }
         }
         cs.setVersionNeeded(versionNeeded);
 
@@ -201,6 +221,12 @@ public class FhirClamlService {
 //                        e.printStackTrace();
 //                    }
 //                }
+        }
+
+        if (Strings.isNotBlank(titleParameter)) {
+            cs.setTitle(titleParameter);
+        } else {
+            cs.setTitle(cs.getName());
         }
 
         cs.addProperty().setCode("kind").setType(PropertyType.CODE);

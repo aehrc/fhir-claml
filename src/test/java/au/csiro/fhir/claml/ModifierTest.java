@@ -1,7 +1,8 @@
 package au.csiro.fhir.claml;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -20,8 +21,8 @@ import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.sax.SAXSource;
 
 import org.hl7.fhir.r4.model.CodeSystem;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -34,7 +35,7 @@ public class ModifierTest {
     private static FhirClamlService controller;
     private static JAXBContext jaxbContext;
 
-    @BeforeClass
+    @BeforeAll
     public static void init() throws JAXBException {
         controller = new FhirClamlService();
         jaxbContext = JAXBContext.newInstance(ClaML.class);
@@ -53,7 +54,7 @@ public class ModifierTest {
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         ClaML claml = (ClaML) jaxbUnmarshaller.unmarshal(source);
 
-        CodeSystem cs = controller.claml2FhirObject(claml, Collections.emptyList(), null, Collections.emptyList(), Collections.emptyList(), false, null, null, null, null, null, false, true);
+        CodeSystem cs = controller.claml2FhirObject(claml, Collections.emptyList(), null, Collections.emptyList(), Collections.emptyList(), false, null, null, null, null, null, false, true, null, null);
         Set<String> codes = cs.getConcept().stream().map(c -> c.getCode()).collect(Collectors.toSet());
 
         String[] expectedCodes = {"A", "A.1", "A.2", "A.3", "B", "C", "D", "BM1", "BM2", "CM1", "DM1", "DM1N1", "DM2", "DM2N1", "DM2N2" };
@@ -61,7 +62,7 @@ public class ModifierTest {
         List<String> expectedCodesList = Arrays.asList(expectedCodes);
         List<String> missingCodes = new ArrayList<>(expectedCodesList);
         missingCodes.removeAll(codes);
-        assertTrue("Missing codes " + missingCodes.stream().collect(Collectors.joining(",")), codes.containsAll(Arrays.asList(expectedCodes)));
+        assertTrue(codes.containsAll(Arrays.asList(expectedCodes)), "Missing codes " + missingCodes.stream().collect(Collectors.joining(",")));
         assertEquals(expectedCodes.length, codes.size());
         
         assertEquals("chapter D : Modification 2 : Nodification 1", cs.getConcept().stream().filter(cdc -> cdc.getCode().equals("DM2N1")).findFirst().get().getDisplay());

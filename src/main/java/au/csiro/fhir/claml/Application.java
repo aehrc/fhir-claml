@@ -127,6 +127,11 @@ public class Application implements CommandLineRunner {
         options.addOption("versionNeeded", false, "Flag to indicate if the code system commits "
                 + "to concept permanence across versions.");
 
+        options.addOption("identifier", true, "Comma-separated list of additional business "
+            + "identifiers. Each business identifer has the format [system]|[value].");
+
+        options.addOption("t", "title", true, "A human-friendly name for the code system.");
+
         // The following options are not yet supported
         /*
 
@@ -146,8 +151,6 @@ public class Application implements CommandLineRunner {
 	    options.addOption("experimental", false, "Indicates if the code system is for testing "
 	        + "purposes or real usage.");
 
-	    options.addOption("identifier", true, "Comma-separated list of additional business "
-	        + "identifiers. Each business identifer has the format [system]|[value].");
 
 	    options.addOption("language", true, "The language of the generated code system. This is a code from the "
 	        + "FHIR Common Languages value set.");
@@ -161,8 +164,6 @@ public class Application implements CommandLineRunner {
 
 	    options.addOption("status", true, "Code system status. Valid values are draft, active, "
 	        + "retired and unknown");
-
-	    options.addOption("t", "title", true, "A human-friendly name for the code system.");
 
 	    options.addOption("v", "version", true, "Business version. If this option is not specified "
 	        + "then the ClaML title.version attribute value will be used.");
@@ -196,6 +197,8 @@ public class Application implements CommandLineRunner {
                         line.getOptionValue("content"),
                         line.hasOption("versionNeeded"),
                         Boolean.parseBoolean(line.getOptionValue("applyModifiers")),
+                        line.getOptionValue("identifier"),
+                        line.getOptionValue("t"),
                         new File(line.getOptionValue("output")));
             } catch (Throwable t) {
                 System.out.println("There was a problem transforming the ClaML file into FHIR: " 
