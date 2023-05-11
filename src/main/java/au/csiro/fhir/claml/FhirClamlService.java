@@ -543,6 +543,9 @@ public class FhirClamlService {
         if (l instanceof Label) {
             String result = "";
             for (Object cont : ((Label) l).getContent()) {
+                if (result.length() > 0) {
+                    result += "\n";
+                }
                 result += getLabelValue(cont);
             }
             return result;
@@ -558,7 +561,11 @@ public class FhirClamlService {
             return result;
         } else if (l instanceof Fragment) {
             String result = "";
-            for (Object cont : ((Fragment) l).getContent()) {
+            Fragment frg = (Fragment) l;
+            for (Object cont : frg.getContent()) {
+                if (frg.getType() != null && frg.getType().equals("list")) {
+                    result += " - ";
+                }
                 result += getLabelValue(cont);
             }
             return result;
