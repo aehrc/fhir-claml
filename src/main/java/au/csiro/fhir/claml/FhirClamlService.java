@@ -88,6 +88,8 @@ public class FhirClamlService {
                       String content,
                       boolean versionNeeded,
                       Boolean applyModifiers,
+                      Boolean experimental,
+                      String status,
                       File output) throws DataFormatException, IOException, ParserConfigurationException, SAXException {
 
         try {
@@ -113,7 +115,7 @@ public class FhirClamlService {
             ClaML claml = (ClaML) jaxbUnmarshaller.unmarshal(source);
 
             CodeSystem cs = claml2FhirObject(claml, displayRubrics, definitionRubric, designationRubrics, excludeClassKind,
-                    excludeKindlessClasses, hierarchyMeaning, id, url, valueSet, content, versionNeeded, applyModifiers);
+                    excludeKindlessClasses, hierarchyMeaning, id, url, valueSet, content, versionNeeded, applyModifiers, experimental, status);
 
             if (output.getParentFile() != null) {
             	output.getParentFile().mkdirs();
@@ -134,7 +136,7 @@ public class FhirClamlService {
     protected CodeSystem claml2FhirObject(ClaML claml, List<String> displayRubrics, String definitionRubric,
             List<String> designationRubrics, List<String> excludeClassKind, Boolean excludeKindlessClasses,
             String hierarchyMeaning, String id, String url, String valueSet, String content,
-            boolean versionNeeded, Boolean applyModifiers) {
+            boolean versionNeeded, Boolean applyModifiers, Boolean experimental, String status) {
         
         // Default values
         if (displayRubrics == null || displayRubrics.isEmpty()) {
@@ -152,8 +154,8 @@ public class FhirClamlService {
         }
         
         CodeSystem cs = new CodeSystem();
-        cs.setStatus(PublicationStatus.DRAFT);
-        cs.setExperimental(true);
+        cs.setStatus(PublicationStatus.fromCode(status));
+        cs.setExperimental(experimental.booleanValue());
         try {
             cs.setContent(CodeSystemContentMode.fromCode(content));
             cs.setHierarchyMeaning(CodeSystemHierarchyMeaning.fromCode(hierarchyMeaning));
