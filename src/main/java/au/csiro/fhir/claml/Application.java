@@ -127,6 +127,11 @@ public class Application implements CommandLineRunner {
         options.addOption("versionNeeded", false, "Flag to indicate if the code system commits "
                 + "to concept permanence across versions.");
 
+        options.addOption("experimental", true, "Indicates if the code system is for testing "
+        + "purposes or real usage.");
+
+        options.addOption("status", true, "Code system status. Valid values are draft, active, "
+	        + "retired and unknown");  
         // The following options are not yet supported
         /*
 
@@ -143,9 +148,6 @@ public class Application implements CommandLineRunner {
 	    options.addOption("description", true, "The description of the code system. If this parameter is "
 	    		+ "not specified, the description will be taken from the content of the ClaML title element.");
 
-	    options.addOption("experimental", false, "Indicates if the code system is for testing "
-	        + "purposes or real usage.");
-
 	    options.addOption("identifier", true, "Comma-separated list of additional business "
 	        + "identifiers. Each business identifer has the format [system]|[value].");
 
@@ -158,9 +160,6 @@ public class Application implements CommandLineRunner {
 	    options.addOption("publisher", true, "The publisher of the code system.");
 
 	    options.addOption("purpose", true, "Explanation of why this code system is needed.");
-
-	    options.addOption("status", true, "Code system status. Valid values are draft, active, "
-	        + "retired and unknown");
 
 	    options.addOption("t", "title", true, "A human-friendly name for the code system.");
 
@@ -196,6 +195,8 @@ public class Application implements CommandLineRunner {
                         line.getOptionValue("content"),
                         line.hasOption("versionNeeded"),
                         Boolean.parseBoolean(line.getOptionValue("applyModifiers")),
+                        Boolean.parseBoolean(line.getOptionValue("experimental", "true")),
+                        line.getOptionValue("status", "draft"),
                         new File(line.getOptionValue("output")));
             } catch (Throwable t) {
                 System.out.println("There was a problem transforming the ClaML file into FHIR: " 

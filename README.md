@@ -37,6 +37,8 @@ The following options are available:
 | -url                     | string      | Canonical identifier of the code system. |
 | -valueSet                | string      | The value set that represents the entire code system. |
 | -versionNeeded           | none        | Flag to indicate if the code system commits to concept permanence across versions. |
+| -experimental            | boolean     | Indicates if the code system is for testing purposes or real usage. Default is 'true'. |
+| -status                  | string      | Code system status. Valid values are draft, active, retired and unknown. Default is 'draft'. |
 
 ### Examples
 
